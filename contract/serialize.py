@@ -1,5 +1,6 @@
 from boa.code.builtins import concat, list, range
 
+
 def deserialize_bytearray(data):
 
     # ok this is weird.  if you remove this print statement, it stops working :/

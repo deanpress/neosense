@@ -1,10 +1,10 @@
 from boa.blockchain.vm.Neo.Blockchain import GetHeight
 from boa.blockchain.vm.Neo.Storage import GetContext, Put, Delete, Get
-from helpers.serialize import *
-from helpers.utils import is_owner
-from boa.code.builtins import list
-from neosense.product import init_product
-from neosense.license import init_license
+from contract.serialize import serialize_array, serialize_var_length_item
+from contract.utils import is_owner
+from boa.code.builtins import list, concat
+from contract.product import init_product, get_all_product
+from contract.license import init_license, get_all_license_data
 
 
 def register_product(args):
@@ -78,7 +78,7 @@ def license_product(args):
         print('licenses have been sold out!')
         return False
 
-    license = concat(product_id, user_id)
+    license_id = concat(product_id, user_id)
 
     # block height at which the license expires
     license_duration = product.le
@@ -90,7 +90,7 @@ def license_product(args):
     license_data[1] = license_expiration
     license_data[2] = product_id
 
-    Put(GetContext, license, license_data)
+    Put(GetContext, license_id, license_data)
     cln = increment_cln(product_id)
 
     return True
@@ -105,14 +105,15 @@ def increment_cln(product_id):
         return False
 
     product = init_product(product_id)
-    product_data = product.all
     # increment the cln
     current_cln = product.cln
     new_cln = current_cln + 1
-    product_data[7] = new_cln
+    all_product_data = get_all_product(product)
+
+    all_product_data[7] = new_cln
 
     Delete(GetContext, product_id)
-    Put(GetContext, product_id, product_data)
+    Put(GetContext, product_id, all_product_data)
     return True
 
 
@@ -128,7 +129,7 @@ def transfer_license(license_id, new_owner):
         return False
 
     license = init_license(license_id)
-    license_data = license.all
+
     product_id = license.product_id
     product = init_product(product_id)
     transferable = product.trans
@@ -146,8 +147,11 @@ def transfer_license(license_id, new_owner):
         return False
 
     Delete(GetContext, license_id)
-    license_data[0] = new_owner
-    Put(GetContext, license_id, license)
+
+    all_license_data = get_all_license_data(license)
+
+    all_license_data[0] = new_owner
+    Put(GetContext, license_id, all_license_data)
     return True
 
 
@@ -185,9 +189,11 @@ def Main(operation, args):
     if operation == "GetLicenseInfo":
         license_id = args[0]
         license = init_license(license_id)
-        return license.all
+        res = get_all_license_data(license)
+        return res
 
     if operation == "GetProductInfo":
         product_id = args[0]
         product = init_product(product_id)
-        return product.all
+        res = get_all_product(product)
+        return res

@@ -1,5 +1,5 @@
 from boa.blockchain.vm.Neo.Storage import GetContext, Get
-from helpers.serialize import *
+from contract.serialize import deserialize_bytearray
 
 
 class Product():
@@ -13,16 +13,16 @@ class Product():
     cln = 1
 
 
-def init_product(product_id):
+def init_product(product_id) -> Product:
     """
     class __init__ method is currently not supported.
-
     :return: Product instance
     """
     serialized_product_data = Get(GetContext, product_id)
     product_list = deserialize_bytearray(serialized_product_data)
 
     product = Product()
+
     product.owner = product_list[0]
     product.id = product_list[1]
     product.desc = product_list[2]
@@ -31,6 +31,13 @@ def init_product(product_id):
     product.pe = product_list[5]
     product.le = product_list[6]
     product.cln = product_list[7]
-    product.all = product_list
 
     return product
+
+
+def get_all_product(product: Product):
+    all_data = [product.owner, product.id, product.desc,
+                product.mln, product.trans, product.pe,
+                product.le, product.cln]
+
+    return all_data
