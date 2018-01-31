@@ -3,6 +3,8 @@ from boa.blockchain.vm.Neo.Storage import GetContext, Put, Delete, Get
 from helpers.serialize import *
 from helpers.utils import is_owner
 from boa.code.builtins import list
+from neosense.product import init_product
+from neosense.license import init_license
 
 
 def register_product(args):
@@ -12,11 +14,11 @@ def register_product(args):
         args[1]: product id (something unique)
         args[2]: description (human readable description of the product, keep as short as possible to keep gas price as
                  low as possible)
-        args[3]: max_license_number; set to False if you want to allow unlimited registrations
-        args[4]: make transferable; set to True to allow users to exchange licenses themselves
+        args[3]: max_license_number;
+        args[4]: make transferable;
         args[5]: product_expiration; blockheight at which the product is expired (no more licences will be distributed)
-        args[6]: license_expiration; number of blocks for which a license is valid (set to True to make it valid for the
-                                     duration of the product)
+        args[6]: license_expiration; number of blocks for which a license is valid
+
     :return: bool
     """
 
@@ -51,15 +53,17 @@ def license_product(args):
 
     :return: bool
     """
+    # unpacking args
     product_id = args[0]
+    user_id = args[1]
 
     if not is_owner(product_id):
         return False
 
-    product = get_product(product_id)
+    product = init_product(product_id)
 
     height = GetHeight()
-    product_expiration = product[5]
+    product_expiration = product.pe
 
     # check if the product can still be licensed
     if height > product_expiration:
@@ -67,18 +71,18 @@ def license_product(args):
         return False
 
     # check if there are still licenses available
-    max_license_number = product[3]
-    current_licenses = product[7]
+    max_license_number = product.mln
+    current_licenses = product.cln
 
     if current_licenses == max_license_number:
         print('licenses have been sold out!')
         return False
 
-    user_id = args[1]
     license = concat(product_id, user_id)
 
     # block height at which the license expires
-    license_expiration = height + product_expiration
+    license_duration = product.le
+    license_expiration = height + license_duration
 
     license_data = list(length=3)
 
@@ -88,63 +92,28 @@ def license_product(args):
 
     Put(GetContext, license, license_data)
     cln = increment_cln(product_id)
+
     return True
-
-
-def get_product(product_id):
-    """
-    :param product_id:
-    :return: deserialized list of product data
-        [0]: owner of product (sender hash)
-        [1]: product_id
-        [2]: description
-        [3]: max_license_number
-        [4]: transferable
-        [5]: product_expiration
-        [6]: license_expiration
-        [7]: current_license_number
-    """
-    serialized_product_data = Get(GetContext, product_id)
-    unserialized_product_data = deserialize_bytearray(serialized_product_data)
-
-    return unserialized_product_data
 
 
 def increment_cln(product_id):
     """
-
     :param product_id:
     :return: bool
     """
     if not is_owner(product_id):
         return False
 
-    product_data = get_product(product_id)
-
+    product = init_product(product_id)
+    product_data = product.all
     # increment the cln
-    current_cln = product_data[7]
+    current_cln = product.cln
     new_cln = current_cln + 1
     product_data[7] = new_cln
 
     Delete(GetContext, product_id)
     Put(GetContext, product_id, product_data)
     return True
-
-
-def get_license(license_id):
-    """
-    Get the deserialized data of a license
-
-    :param license_id:
-    :return: list:
-        [0]: owner (user_id)
-        [1]: license_expiration
-        [2]: product_id
-    """
-    serialized_license_data = Get(GetContext, license_id)
-    license_data = deserialize_bytearray(serialized_license_data)
-
-    return license_data
 
 
 def transfer_license(license_id, new_owner):
@@ -158,13 +127,14 @@ def transfer_license(license_id, new_owner):
     if not is_owner(license_id):
         return False
 
-    license = get_license(license_id)
-    product_id = license_id[2]
-    product_data = get_product(product_id)
-    transferable = product_data[4]
+    license = init_license(license_id)
+    license_data = license.all
+    product_id = license.product_id
+    product = init_product(product_id)
+    transferable = product.trans
 
     # check if the license is still valid
-    license_expiration_height = license[1]
+    license_expiration_height = license.expir
     height = GetHeight()
 
     if height > license_expiration_height:
@@ -176,7 +146,7 @@ def transfer_license(license_id, new_owner):
         return False
 
     Delete(GetContext, license_id)
-    license[0] = new_owner
+    license_data[0] = new_owner
     Put(GetContext, license_id, license)
     return True
 
@@ -214,8 +184,10 @@ def Main(operation, args):
 
     if operation == "GetLicenseInfo":
         license_id = args[0]
-        return get_license(license_id)
+        license = init_license(license_id)
+        return license.all
 
     if operation == "GetProductInfo":
         product_id = args[0]
-        return get_product(product_id)
+        product = init_product(product_id)
+        return product.all
