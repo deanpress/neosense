@@ -1,9 +1,7 @@
-from boa.blockchain.vm.Neo.Runtime import CheckWitness
 from boa.blockchain.vm.Neo.Blockchain import GetHeight
 from boa.blockchain.vm.Neo.Storage import GetContext, Put, Delete, Get
-from boa.code.builtins import concat
-from .serialize import *
-from .utils import is_owner
+from helpers.serialize import *
+from helpers.utils import is_owner
 from boa.code.builtins import list
 
 
@@ -180,6 +178,7 @@ def transfer_license(license_id, new_owner):
     Delete(GetContext, license_id)
     license[0] = new_owner
     Put(GetContext, license_id, license)
+    return True
 
 
 def Main(operation, args):
