@@ -1,6 +1,5 @@
 from boa.blockchain.vm.Neo.Storage import GetContext, Get
-from contract.serialize import deserialize_bytearray
-from boa.code.builtins import list
+from contract.helpers.serialize import deserialize_bytearray
 
 
 class License():

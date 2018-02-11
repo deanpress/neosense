@@ -1,7 +1,7 @@
 from boa.blockchain.vm.Neo.Blockchain import GetHeight
 from boa.blockchain.vm.Neo.Storage import GetContext, Put, Delete, Get
-from contract.serialize import serialize_array, serialize_var_length_item
-from contract.utils import is_owner
+from contract.helpers.serialize import serialize_array, serialize_var_length_item
+from contract.helpers.utils import is_owner
 from boa.code.builtins import list, concat
 from contract.product import init_product, get_all_product
 from contract.license import init_license, get_all_license_data
@@ -18,6 +18,8 @@ def register_product(args):
         args[4]: make transferable;
         args[5]: product_expiration; blockheight at which the product is expired (no more licences will be distributed)
         args[6]: license_expiration; number of blocks for which a license is valid
+        args[7]: autosell (bool)
+        args[8]: price (gas)
 
     :return: bool
     """
@@ -32,7 +34,10 @@ def register_product(args):
     product_data[4] = args[4]
     product_data[5] = args[5]
     product_data[6] = args[6]
+    # this is the total amount sold
     product_data[7] = 0
+    product_data[8] = args[7]
+    product_data[9] = args[8]
 
     if not product_exists:
         serialized_product_data = serialize_array(args)
@@ -105,6 +110,7 @@ def increment_cln(product_id):
         return False
 
     product = init_product(product_id)
+
     # increment the cln
     current_cln = product.cln
     new_cln = current_cln + 1
@@ -153,6 +159,15 @@ def transfer_license(license_id, new_owner):
     all_license_data[0] = new_owner
     Put(GetContext, license_id, all_license_data)
     return True
+
+
+def purchase_license(product_id):
+    """
+    Some function to allow people to purchase a license for a preset amount of gas/neo/NEP5 token
+    :param product_id:
+    :return: bool
+    """
+    pass
 
 
 def Main(operation, args):

@@ -1,5 +1,5 @@
 from boa.blockchain.vm.Neo.Storage import GetContext, Get
-from contract.serialize import deserialize_bytearray
+from contract.helpers.serialize import deserialize_bytearray
 
 
 class Product():
@@ -11,6 +11,8 @@ class Product():
     pe = 1
     le = 1
     cln = 1
+    purchasable = True
+    price = 1
 
 
 def init_product(product_id) -> Product:
@@ -31,13 +33,15 @@ def init_product(product_id) -> Product:
     product.pe = product_list[5]
     product.le = product_list[6]
     product.cln = product_list[7]
-
+    product.purchasable = product_list[8]
+    product.price = product_list[9]
     return product
 
 
 def get_all_product(product: Product):
     all_data = [product.owner, product.id, product.desc,
                 product.mln, product.trans, product.pe,
-                product.le, product.cln]
+                product.le, product.cln, product.purchasable,
+                product.price]
 
     return all_data
