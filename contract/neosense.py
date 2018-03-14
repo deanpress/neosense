@@ -4,9 +4,9 @@ Created by Dean van Dugteren (City of Zion, VDT Network)
 hello@dean.press
 """
 
-from boa.blockchain.vm.Neo.Runtime import CheckWitness
-from boa.blockchain.vm.Neo.Storage import GetContext, Put, Delete, Get
-from boa.code.builtins import concat
+from boa.interop.Neo.Runtime import CheckWitness
+from boa.interop.Neo.Storage import GetContext, Put, Delete, Get
+from boa.builtins import concat
 
 
 def is_owner(product_id):
@@ -14,7 +14,7 @@ def is_owner(product_id):
     Verify that the product is owned by the requesting user.
     """
     print('Am I the product owner?')
-    product_owner = Get(GetContext, product_id)
+    product_owner = Get(GetContext(), product_id)
     is_product_owner = CheckWitness(product_owner)
     if not is_product_owner:
         print('Not the product owner!')
@@ -62,9 +62,9 @@ def Main(operation, args):
     if operation != None:
         if operation == 'RegisterProduct':
             print('RegisterProduct')
-            product_exists = Get(GetContext, product_id)
+            product_exists = Get(GetContext(), product_id)
             if not product_exists:
-                Put(GetContext, product_id, user_hash)
+                Put(GetContext(), product_id, user_hash)
                 print("Product Registered")
                 return True
 
@@ -72,12 +72,12 @@ def Main(operation, args):
             print('LicenseProduct')
             if is_owner(product_id):
                 # License the product
-                Put(GetContext, requested_license, requested_user)
+                Put(GetContext(), requested_license, requested_user)
                 print("Product Licensed")
                 return True
 
         if operation == 'TransferLicense':
-            license_owner = Get(GetContext, user_license)
+            license_owner = Get(GetContext(), user_license)
             if license_owner:
                 print("License exists")
                 is_license_owner = CheckWitness(license_owner)
@@ -87,7 +87,7 @@ def Main(operation, args):
                     # Transfer License
                     new_user_hash = args[2]
                     new_license = concat(new_user_hash, product_id)
-                    Delete(GetContext, user_license)
+                    Delete(GetContext(), user_license)
                     Put(GetContext, new_license, new_user_hash)
                     print("License Transfered")
                     return True
@@ -98,12 +98,12 @@ def Main(operation, args):
                 # Delete the license
                 user_hash_to_del = args[2]
                 license_to_del = concat(user_hash_to_del, product_id)
-                Delete(GetContext, license_to_del)
+                Delete(GetContext(), license_to_del)
                 return True
 
         if operation == 'GetLicense':
             print("GetLicense")
-            license_owner = Get(GetContext, requested_license)
+            license_owner = Get(GetContext(), requested_license)
             if license_owner:
                 return license_owner
 
